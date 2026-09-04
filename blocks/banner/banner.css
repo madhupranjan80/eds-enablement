@@ -1,0 +1,27 @@
+.banner {
+  --banner-background-color: #3b63fb;
+
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  background-color: var(--banner-background-color);
+}
+
+.banner .banner-image img {
+  display: block;
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.banner .banner-title {
+  margin: 0;
+  color: var(--background-color);
+  font-size: var(--heading-font-size-s);
+}
+
+.banner.dark {
+  --banner-background-color: var(--dark-color);
+}
