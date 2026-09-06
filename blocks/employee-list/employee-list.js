@@ -1,11 +1,7 @@
-import { fetchPlaceholders } from '/scripts/placeholders.js';
-
 const PAGE_SIZE = 10;
+// employees and placeholders are two sheets in the same employees.xlsx document
 const EMPLOYEE_DATA_URL = '/employees.json';
-
-// If the placeholders sheet is under a locale folder, use:
-// const PLACEHOLDER_LOCALE = 'en';
-const PLACEHOLDER_LOCALE = null;
+const DEFAULT_LOAD_MORE_LABEL = 'Load more';
 
 const EMPLOYEE_COLUMNS = [
   'Name',
@@ -32,17 +28,29 @@ function appendEmployees(tbody, employees) {
   });
 }
 
-async function getPlaceholders() {
-  if (PLACEHOLDER_LOCALE) {
-    return fetchPlaceholders(PLACEHOLDER_LOCALE);
-  }
+async function getLoadMoreLabel() {
+  try {
+    const url = new URL(EMPLOYEE_DATA_URL, window.location.origin);
+    url.searchParams.set('sheet', 'placeholders');
 
-  return fetchPlaceholders();
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) {
+      return DEFAULT_LOAD_MORE_LABEL;
+    }
+
+    const payload = await response.json();
+    const entry = payload.data?.find(
+      (placeholder) => placeholder.Key?.trim() === 'load-more',
+    );
+
+    return entry?.Value || DEFAULT_LOAD_MORE_LABEL;
+  } catch (error) {
+    console.error(error);
+    return DEFAULT_LOAD_MORE_LABEL;
+  }
 }
 
 export default async function decorate(block) {
-  block.replaceChildren();
-
   const table = document.createElement('table');
   table.className = 'employee-list__table';
 
@@ -69,12 +77,7 @@ export default async function decorate(block) {
   loadMoreButton.className = 'employee-list__load-more';
   loadMoreButton.type = 'button';
 
-  const placeholders = await getPlaceholders();
-  const loadMoreLabel = placeholders.loadMore;
-
-  if (!loadMoreLabel) {
-    throw new Error('Missing required placeholder: load-more');
-  }
+  const loadMoreLabel = await getLoadMoreLabel();
 
   loadMoreButton.textContent = loadMoreLabel;
   loadMoreButton.setAttribute(
@@ -83,7 +86,7 @@ export default async function decorate(block) {
   );
 
   controls.append(loadMoreButton, status);
-  block.append(table, controls);
+  block.replaceChildren(table, controls);
 
   let offset = 0;
   let total = 0;
@@ -104,6 +107,7 @@ export default async function decorate(block) {
         window.location.origin,
       );
 
+      url.searchParams.set('sheet', 'employees');
       url.searchParams.set('limit', String(PAGE_SIZE));
       url.searchParams.set('offset', String(offset));
 
